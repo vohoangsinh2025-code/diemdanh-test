@@ -14,6 +14,44 @@ const kq = document.getElementById('kq');
 const SERVICE_UUID = '12345678-1234-5678-1234-56789abcdef0';
 const CHAR_UUID = '12345678-1234-5678-1234-56789abcdef1';
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxipYyqTN6KDmLVlldXaPy_OwMV7lj-Wy-ZVt8k4omV_a--W9-DHfaKiiZaMj5mufF0/exec';
+const KHOA_LUU_TAM = 'hangChoGuiDiemDanh';
+
+function docHangCho() {
+  try { return JSON.parse(localStorage.getItem(KHOA_LUU_TAM) || '[]'); }
+  catch (e) { return []; }
+}
+function luuHangCho(list) {
+  try { localStorage.setItem(KHOA_LUU_TAM, JSON.stringify(list)); } catch (e) {}
+}
+
+async function guiMotBanGhi(banGhi) {
+  const url = `${APPS_SCRIPT_URL}?beacon=${banGhi.beacon}&buoc=${banGhi.buoc}&ma=${banGhi.ma}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
+}
+
+async function thuGuiHangCho() {
+  let list = docHangCho();
+  if (list.length === 0) return;
+  const conLai = [];
+  for (const banGhi of list) {
+    try {
+      await guiMotBanGhi(banGhi);
+    } catch (e) {
+      conLai.push(banGhi);
+    }
+  }
+  luuHangCho(conLai);
+  if (conLai.length === 0 && list.length > 0) {
+    kq.textContent = 'Da gui bu thanh cong ' + list.length + ' ban ghi luu tam truoc do!';
+  }
+}
+
+// Thu gui hang cho ngay khi mo trang, va moi khi co mang tro lai
+window.addEventListener('load', thuGuiHangCho);
+window.addEventListener('online', thuGuiHangCho);
+setInterval(thuGuiHangCho, 15000);
 
 document.getElementById('nut').onclick = async () => {
   if (!navigator.bluetooth) {
@@ -39,16 +77,26 @@ document.getElementById('nut').onclick = async () => {
     const buoc = (bytes[2] | (bytes[3] << 8) | (bytes[4] << 16) | (bytes[5] << 24)) >>> 0;
     const hmacHex = Array.from(bytes.slice(6, 14)).map(b => b.toString(16).padStart(2, '0')).join('');
 
-    kq.textContent = 'Da doc duoc ma. Dang gui len Google Sheet...';
+    kq.textContent = 'Da doc duoc ma tu board!\nDang gui len Google Sheet...';
 
-    const url = `${APPS_SCRIPT_URL}?beacon=${beacon}&buoc=${buoc}&ma=${hmacHex}`;
-    const resGhi = await fetch(url);
-    const ketQua = await resGhi.json();
+    const banGhi = { beacon, buoc, ma: hmacHex };
 
-    kq.textContent =
-      (ketQua.hopLe ? 'DIEM DANH THANH CONG!' : 'MA KHONG HOP LE!') + '\n' +
-      'Da ghi vao Google Sheet.\n' +
-      'Gio nhan: ' + new Date().toLocaleTimeString();
+    try {
+      const ketQua = await guiMotBanGhi(banGhi);
+      kq.textContent =
+        (ketQua.hopLe ? 'DIEM DANH THANH CONG!' : 'MA KHONG HOP LE!') + '\n' +
+        'Da ghi vao Google Sheet.\n' +
+        'Gio nhan: ' + new Date().toLocaleTimeString();
+    } catch (loiMang) {
+      const list = docHangCho();
+      list.push(banGhi);
+      luuHangCho(list);
+      kq.textContent =
+        'DA DOC DUOC MA (co the cho giang vien xem man hinh nay lam bang chung).\n' +
+        'CHUA GUI DUOC len Google Sheet do mat mang.\n' +
+        'Da luu tam tren dien thoai - se TU DONG gui lai ngay khi co mang, khong can lam gi them.\n' +
+        'Gio doc ma: ' + new Date().toLocaleTimeString();
+    }
 
   } catch (err) {
     kq.textContent = 'LOI: ' + err.name + ' - ' + err.message;
