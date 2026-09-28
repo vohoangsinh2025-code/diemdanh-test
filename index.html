@@ -1,20 +1,14 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Thu quet BLE</title>
-<style>
-  body { font-family: sans-serif; padding: 16px; font-size: 18px; }
-  button { font-size: 22px; padding: 14px 20px; margin: 8px 0; }
-  #kq { white-space: pre-wrap; font-family: monospace; background: #eee; padding: 10px; margin-top: 12px; }
-</style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diem danh BLE</title>
 </head>
 <body>
-<h2>Thu quet BLE</h2>
-<button id="nut">BAM DE QUET</button>
-<div id="kq">Chua quet.</div>
-
+<h2>Diem danh BLE</h2>
+<button id="nut" style="font-size:20px;padding:15px 30px;">BAM DE DIEM DANH</button>
+<div id="kq" style="margin-top:20px;font-size:16px;">Chua quet.</div>
 <script>
 const kq = document.getElementById('kq');
 
@@ -25,27 +19,32 @@ function hex(dv) {
 
 document.getElementById('nut').onclick = async () => {
   if (!navigator.bluetooth) {
-    kq.textContent = 'LOI: Trinh duyet nay khong ho tro Web Bluetooth. Hay dung Chrome tren Android.';
-    return;
-  }
-  if (!navigator.bluetooth.requestLEScan) {
-    kq.textContent = 'LOI: Chrome nay chua co chuc nang quet. Kiem tra da bat flag chua.';
+    kq.textContent = 'LOI: Trinh duyet nay khong ho tro Web Bluetooth.';
     return;
   }
   try {
-    kq.textContent = 'Dang quet... (neu Chrome hoi, bam Cho phep)';
-    navigator.bluetooth.addEventListener('advertisementreceived', (e) => {
+    kq.textContent = 'Dang mo danh sach thiet bi... hay chon dung ten board.';
+
+    const device = await navigator.bluetooth.requestDevice({
+      filters: [{ manufacturerData: [{ companyIdentifier: 0xFFFF }] }],
+      optionalManufacturerData: [0xFFFF]
+    });
+
+    kq.textContent = 'Da chon: ' + device.name + '. Dang cho du lieu...';
+
+    device.addEventListener('advertisementreceived', (e) => {
       const d = e.manufacturerData.get(0xFFFF);
       if (!d) return;
-      kq.textContent = 'THAY BOARD!\n' +
+      kq.textContent =
+        'DIEM DANH THANH CONG!\n' +
+        'Thiet bi: ' + device.name + '\n' +
         'Cuong do song: ' + e.rssi + ' dBm\n' +
         'Du lieu: ' + hex(d) + '\n' +
         'Gio nhan: ' + new Date().toLocaleTimeString();
     });
-    await navigator.bluetooth.requestLEScan({
-      filters: [{ manufacturerData: [{ companyIdentifier: 0xFFFF }] }],
-      keepRepeatedDevices: true
-    });
+
+    await device.watchAdvertisements();
+
   } catch (err) {
     kq.textContent = 'LOI: ' + err.name + ' - ' + err.message;
   }
