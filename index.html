@@ -11,6 +11,8 @@
 <div id="kq" style="margin-top:20px;font-size:16px;">Chua quet.</div>
 <script>
 const kq = document.getElementById('kq');
+const SERVICE_UUID = '12345678-1234-5678-1234-56789abcdef0';
+const CHAR_UUID = '12345678-1234-5678-1234-56789abcdef1';
 
 function hex(dv) {
   return Array.from(new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength))
@@ -24,27 +26,23 @@ document.getElementById('nut').onclick = async () => {
   }
   try {
     kq.textContent = 'Dang mo danh sach thiet bi... hay chon dung ten board.';
-
     const device = await navigator.bluetooth.requestDevice({
       filters: [{ manufacturerData: [{ companyIdentifier: 0xFFFF }] }],
-      optionalManufacturerData: [0xFFFF]
+      optionalServices: [SERVICE_UUID]
     });
 
-    kq.textContent = 'Da chon: ' + device.name + '. Dang cho du lieu...';
+    kq.textContent = 'Da chon: ' + device.name + '. Dang ket noi...';
+    const server = await device.gatt.connect();
+    const service = await server.getPrimaryService(SERVICE_UUID);
+    const characteristic = await service.getCharacteristic(CHAR_UUID);
+    const value = await characteristic.readValue();
 
-    device.addEventListener('advertisementreceived', (e) => {
-      const d = e.manufacturerData.get(0xFFFF);
-      if (!d) return;
-      kq.textContent =
-        'DIEM DANH THANH CONG!\n' +
-        'Thiet bi: ' + device.name + '\n' +
-        'Cuong do song: ' + e.rssi + ' dBm\n' +
-        'Du lieu: ' + hex(d) + '\n' +
-        'Gio nhan: ' + new Date().toLocaleTimeString();
-    });
+    kq.textContent =
+      'DIEM DANH THANH CONG!\n' +
+      'Du lieu: ' + hex(value) + '\n' +
+      'Gio nhan: ' + new Date().toLocaleTimeString();
 
-    await device.watchAdvertisements();
-
+    device.gatt.disconnect();
   } catch (err) {
     kq.textContent = 'LOI: ' + err.name + ' - ' + err.message;
   }
