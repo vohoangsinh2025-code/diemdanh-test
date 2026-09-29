@@ -7,25 +7,86 @@
 </head>
 <body>
 <h2>Diem danh BLE</h2>
-<button id="nut" style="font-size:20px;padding:15px 30px;">BAM DE DIEM DANH</button>
-<div id="kq" style="margin-top:20px;font-size:16px;white-space:pre-line;">Chua quet.</div>
+
+<div id="khuDangKy">
+  <p>Lan dau dung, hay dang ky theo dung danh sach lop:</p>
+  <input id="oStt" type="text" placeholder="So thu tu (STT)" style="font-size:16px;padding:8px;display:block;margin-bottom:8px;width:250px;">
+  <input id="oHoTen" type="text" placeholder="Ho va ten day du" style="font-size:16px;padding:8px;display:block;margin-bottom:8px;width:250px;">
+  <input id="oNgaySinh" type="text" placeholder="Ngay sinh (vd: 15032005)" style="font-size:16px;padding:8px;display:block;margin-bottom:8px;width:250px;">
+  <button id="nutDangKy" style="font-size:18px;padding:12px 24px;">DANG KY</button>
+  <div id="kqDangKy" style="margin-top:10px;font-size:15px;white-space:pre-line;"></div>
+</div>
+
+<div id="khuDiemDanh" style="display:none;">
+  <p id="chaoMung"></p>
+  <button id="nut" style="font-size:20px;padding:15px 30px;">BAM DE DIEM DANH</button>
+  <div id="kq" style="margin-top:20px;font-size:16px;white-space:pre-line;">Chua quet.</div>
+</div>
+
 <script>
-const kq = document.getElementById('kq');
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwIERMCfHXH2Z17L6D3UpUIe7FAe_-3gzs1kZdnKFudyJoDJ8Xj5_N6rIyCxh7sScsz/exec';
 const SERVICE_UUID = '12345678-1234-5678-1234-56789abcdef0';
 const CHAR_UUID = '12345678-1234-5678-1234-56789abcdef1';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwIERMCfHXH2Z17L6D3UpUIe7FAe_-3gzs1kZdnKFudyJoDJ8Xj5_N6rIyCxh7sScsz/exec';
 const KHOA_LUU_TAM = 'hangChoGuiDiemDanh';
+const KHOA_DANG_KY = 'dangKyDiemDanh';
+
+const khuDangKy = document.getElementById('khuDangKy');
+const khuDiemDanh = document.getElementById('khuDiemDanh');
+const kqDangKy = document.getElementById('kqDangKy');
+const chaoMung = document.getElementById('chaoMung');
+const kq = document.getElementById('kq');
+
+function docThongTinDangKy() {
+  try { return JSON.parse(localStorage.getItem(KHOA_DANG_KY)); } catch (e) { return null; }
+}
+
+function hienThiTheoTrangThai() {
+  const tt = docThongTinDangKy();
+  if (tt && tt.stt && tt.khoaThietBi) {
+    khuDangKy.style.display = 'none';
+    khuDiemDanh.style.display = 'block';
+    chaoMung.textContent = 'Xin chao, ' + tt.hoTen + ' (STT ' + tt.stt + ')';
+  } else {
+    khuDangKy.style.display = 'block';
+    khuDiemDanh.style.display = 'none';
+  }
+}
+
+document.getElementById('nutDangKy').onclick = async () => {
+  const stt = document.getElementById('oStt').value.trim();
+  const hoTen = document.getElementById('oHoTen').value.trim();
+  const ngaySinh = document.getElementById('oNgaySinh').value.trim();
+  if (!stt || !hoTen || !ngaySinh) {
+    kqDangKy.textContent = 'Vui long nhap du ca 3 thong tin.';
+    return;
+  }
+  kqDangKy.textContent = 'Dang dang ky...';
+  try {
+    const url = `${APPS_SCRIPT_URL}?action=dangky&stt=${encodeURIComponent(stt)}&hoten=${encodeURIComponent(hoTen)}&ngaysinh=${encodeURIComponent(ngaySinh)}`;
+    const res = await fetch(url);
+    const ketQua = await res.json();
+    if (ketQua.ok) {
+      localStorage.setItem(KHOA_DANG_KY, JSON.stringify({ stt, hoTen, khoaThietBi: ketQua.khoaThietBi }));
+      kqDangKy.textContent = 'Dang ky thanh cong!';
+      hienThiTheoTrangThai();
+    } else {
+      kqDangKy.textContent = 'LOI: ' + ketQua.loi;
+    }
+  } catch (err) {
+    kqDangKy.textContent = 'LOI mang, thu lai sau: ' + err.message;
+  }
+};
 
 function docHangCho() {
-  try { return JSON.parse(localStorage.getItem(KHOA_LUU_TAM) || '[]'); }
-  catch (e) { return []; }
+  try { return JSON.parse(localStorage.getItem(KHOA_LUU_TAM) || '[]'); } catch (e) { return []; }
 }
 function luuHangCho(list) {
   try { localStorage.setItem(KHOA_LUU_TAM, JSON.stringify(list)); } catch (e) {}
 }
 
 async function guiMotBanGhi(banGhi) {
-  const url = `${APPS_SCRIPT_URL}?beacon=${banGhi.beacon}&buoc=${banGhi.buoc}&ma=${banGhi.ma}`;
+  const tt = docThongTinDangKy();
+  const url = `${APPS_SCRIPT_URL}?beacon=${banGhi.beacon}&buoc=${banGhi.buoc}&ma=${banGhi.ma}&stt=${encodeURIComponent(tt.stt)}&khoathietbi=${encodeURIComponent(tt.khoaThietBi)}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error('HTTP ' + res.status);
   return res.json();
@@ -36,11 +97,8 @@ async function thuGuiHangCho() {
   if (list.length === 0) return;
   const conLai = [];
   for (const banGhi of list) {
-    try {
-      await guiMotBanGhi(banGhi);
-    } catch (e) {
-      conLai.push(banGhi);
-    }
+    try { await guiMotBanGhi(banGhi); }
+    catch (e) { conLai.push(banGhi); }
   }
   luuHangCho(conLai);
   if (conLai.length === 0 && list.length > 0) {
@@ -48,8 +106,7 @@ async function thuGuiHangCho() {
   }
 }
 
-// Thu gui hang cho ngay khi mo trang, va moi khi co mang tro lai
-window.addEventListener('load', thuGuiHangCho);
+window.addEventListener('load', () => { hienThiTheoTrangThai(); thuGuiHangCho(); });
 window.addEventListener('online', thuGuiHangCho);
 setInterval(thuGuiHangCho, 15000);
 
