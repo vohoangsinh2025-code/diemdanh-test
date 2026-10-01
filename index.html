@@ -8,6 +8,12 @@
 <body>
 <h2>Diem danh BLE</h2>
 
+<div id="canhBaoTrinhDuyet" style="display:none;background:#fff3cd;padding:16px;margin-bottom:16px;border-radius:8px;border:1px solid #e0c060;">
+  <p style="margin-top:0;">Trinh duyet hien tai (vi du: Zalo, Messenger) <b>khong ho tro Bluetooth</b>. Hay bam nut duoi day de mo bang Chrome that:</p>
+  <a id="lienKetMoChrome" style="display:inline-block;background:#1a73e8;color:#fff;padding:14px 28px;border-radius:6px;text-decoration:none;font-size:18px;font-weight:bold;">MO BANG CHROME</a>
+  <p style="font-size:13px;color:#555;margin-bottom:0;">Neu bam ma khong tu mo Chrome, hay bam bieu tuong 3 cham (⋮) o goc tren man hinh roi chon "Mo bang Chrome".</p>
+</div>
+
 <div id="khuDangKy">
   <p>Lan dau dung, hay dang ky theo dung danh sach lop:</p>
   <input id="oStt" type="text" placeholder="So thu tu (STT)" style="font-size:16px;padding:8px;display:block;margin-bottom:8px;width:250px;">
@@ -35,12 +41,27 @@ const khuDiemDanh = document.getElementById('khuDiemDanh');
 const kqDangKy = document.getElementById('kqDangKy');
 const chaoMung = document.getElementById('chaoMung');
 const kq = document.getElementById('kq');
+const canhBaoTrinhDuyet = document.getElementById('canhBaoTrinhDuyet');
+
+// Neu trinh duyet khong co Web Bluetooth (thuong la dang mo trong Zalo/Messenger/Facebook...),
+// an form dang ky/diem danh di va hien nut mo bang Chrome that.
+if (!navigator.bluetooth) {
+  khuDangKy.style.display = 'none';
+  khuDiemDanh.style.display = 'none';
+  canhBaoTrinhDuyet.style.display = 'block';
+
+  const urlHienTai = location.href.replace(/^https?:\/\//, '');
+  const lienKetChrome = 'intent://' + urlHienTai + '#Intent;scheme=https;package=com.android.chrome;end';
+  const nutMoChrome = document.getElementById('lienKetMoChrome');
+  nutMoChrome.href = lienKetChrome;
+}
 
 function docThongTinDangKy() {
   try { return JSON.parse(localStorage.getItem(KHOA_DANG_KY)); } catch (e) { return null; }
 }
 
 function hienThiTheoTrangThai() {
+  if (!navigator.bluetooth) return;
   const tt = docThongTinDangKy();
   if (tt && tt.stt && tt.khoaThietBi) {
     khuDangKy.style.display = 'none';
