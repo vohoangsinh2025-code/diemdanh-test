@@ -18,7 +18,7 @@
   <p>Lan dau dung, hay dang ky theo dung danh sach lop:</p>
   <input id="oStt" type="text" placeholder="So thu tu (STT)" style="font-size:16px;padding:8px;display:block;margin-bottom:8px;width:250px;">
   <input id="oHoTen" type="text" placeholder="Ho va ten day du" style="font-size:16px;padding:8px;display:block;margin-bottom:8px;width:250px;">
-  <input id="oNgaySinh" type="text" placeholder="Ngay sinh (vd: 15032005)" style="font-size:16px;padding:8px;display:block;margin-bottom:8px;width:250px;">
+  <input id="oMssv" type="text" placeholder="MSSV (ma so sinh vien)" style="font-size:16px;padding:8px;display:block;margin-bottom:8px;width:250px;">
   <button id="nutDangKy" style="font-size:18px;padding:12px 24px;">DANG KY</button>
   <div id="kqDangKy" style="margin-top:10px;font-size:15px;white-space:pre-line;"></div>
 </div>
@@ -76,14 +76,14 @@ function hienThiTheoTrangThai() {
 document.getElementById('nutDangKy').onclick = async () => {
   const stt = document.getElementById('oStt').value.trim();
   const hoTen = document.getElementById('oHoTen').value.trim();
-  const ngaySinh = document.getElementById('oNgaySinh').value.trim();
-  if (!stt || !hoTen || !ngaySinh) {
+  const mssv = document.getElementById('oMssv').value.trim();
+  if (!stt || !hoTen || !mssv) {
     kqDangKy.textContent = 'Vui long nhap du ca 3 thong tin.';
     return;
   }
   kqDangKy.textContent = 'Dang dang ky...';
   try {
-    const url = `${APPS_SCRIPT_URL}?action=dangky&stt=${encodeURIComponent(stt)}&hoten=${encodeURIComponent(hoTen)}&ngaysinh=${encodeURIComponent(ngaySinh)}`;
+    const url = `${APPS_SCRIPT_URL}?action=dangky&stt=${encodeURIComponent(stt)}&hoten=${encodeURIComponent(hoTen)}&mssv=${encodeURIComponent(mssv)}`;
     const res = await fetch(url);
     const ketQua = await res.json();
     if (ketQua.ok) {
