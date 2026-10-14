@@ -139,7 +139,7 @@ document.getElementById('nut').onclick = async () => {
   try {
     kq.textContent = 'Dang mo danh sach thiet bi... hay chon dung ten board.';
     const device = await navigator.bluetooth.requestDevice({
-      ...(/iPhone|iPad|iPod/i.test(navigator.userAgent) ? { acceptAllDevices: true } : { filters: [{ manufacturerData: [{ companyIdentifier: 0xFFFF }] }] }),
+      ...(/iPhone|iPad|iPod/i.test(navigator.userAgent) ? { filters: [{ namePrefix: 'DIEM_DANH' }, { namePrefix: 'DD-BLE' }] } : { filters: [{ manufacturerData: [{ companyIdentifier: 0xFFFF }] }] }),
       optionalServices: [SERVICE_UUID]
     });
 
