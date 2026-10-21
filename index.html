@@ -161,10 +161,16 @@ document.getElementById('nut').onclick = async () => {
 
     try {
       const ketQua = await guiMotBanGhi(banGhi);
-      kq.textContent =
-        (ketQua.hopLe ? 'DIEM DANH THANH CONG!' : 'MA KHONG HOP LE!') + '\n' +
-        'Da ghi vao Google Sheet.\n' +
-        'Gio nhan: ' + new Date().toLocaleTimeString();
+      if (ketQua.hopLe) {
+        kq.textContent = 'DIEM DANH THANH CONG!\nDa ghi vao Google Sheet.\nGio nhan: ' + new Date().toLocaleTimeString();
+      } else if (ketQua.hopLeHMAC && !ketQua.hopLeThietBi) {
+        try { localStorage.removeItem(KHOA_DANG_KY); } catch (e) {}
+        hienThiTheoTrangThai();
+        kqDangKy.textContent = 'Dang ky cua em chua co tren he thong. Hay dang ky lai (STT, Ho ten, MSSV), sau do bam diem danh lai.';
+        kq.textContent = 'CHUA DIEM DANH: may nay chua co trong danh sach dang ky.';
+      } else {
+        kq.textContent = 'MA KHONG HOP LE! Hay bam diem danh lai.\nChua ghi vao Google Sheet.\nGio nhan: ' + new Date().toLocaleTimeString();
+      }
     } catch (loiMang) {
       const list = docHangCho();
       list.push(banGhi);
