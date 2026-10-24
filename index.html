@@ -16,7 +16,6 @@
 
 <div id="khuDangKy">
   <p>Lan dau dung, hay dang ky theo dung danh sach lop:</p>
-  <input id="oStt" type="text" placeholder="So thu tu (STT)" style="font-size:16px;padding:8px;display:block;margin-bottom:8px;width:250px;">
   <input id="oHoTen" type="text" placeholder="Ho va ten day du" style="font-size:16px;padding:8px;display:block;margin-bottom:8px;width:250px;">
   <input id="oMssv" type="text" placeholder="MSSV (ma so sinh vien)" style="font-size:16px;padding:8px;display:block;margin-bottom:8px;width:250px;">
   <button id="nutDangKy" style="font-size:18px;padding:12px 24px;">DANG KY</button>
@@ -66,7 +65,7 @@ function hienThiTheoTrangThai() {
   if (tt && tt.stt && tt.khoaThietBi) {
     khuDangKy.style.display = 'none';
     khuDiemDanh.style.display = 'block';
-    chaoMung.textContent = 'Xin chao, ' + tt.hoTen + ' (STT ' + tt.stt + ')';
+    chaoMung.textContent = 'Xin chao, ' + tt.hoTen + ' (MSSV ' + (tt.mssv || tt.stt) + ')';
   } else {
     khuDangKy.style.display = 'block';
     khuDiemDanh.style.display = 'none';
@@ -74,20 +73,19 @@ function hienThiTheoTrangThai() {
 }
 
 document.getElementById('nutDangKy').onclick = async () => {
-  const stt = document.getElementById('oStt').value.trim();
   const hoTen = document.getElementById('oHoTen').value.trim();
   const mssv = document.getElementById('oMssv').value.trim();
-  if (!stt || !hoTen || !mssv) {
-    kqDangKy.textContent = 'Vui long nhap du ca 3 thong tin.';
+  if (!hoTen || !mssv) {
+    kqDangKy.textContent = 'Vui long nhap Ho ten va MSSV.';
     return;
   }
   kqDangKy.textContent = 'Dang dang ky...';
   try {
-    const url = `${APPS_SCRIPT_URL}?action=dangky&stt=${encodeURIComponent(stt)}&hoten=${encodeURIComponent(hoTen)}&mssv=${encodeURIComponent(mssv)}`;
+    const url = `${APPS_SCRIPT_URL}?action=dangky&hoten=${encodeURIComponent(hoTen)}&mssv=${encodeURIComponent(mssv)}`;
     const res = await fetch(url);
     const ketQua = await res.json();
     if (ketQua.ok) {
-      localStorage.setItem(KHOA_DANG_KY, JSON.stringify({ stt, hoTen, khoaThietBi: ketQua.khoaThietBi }));
+      localStorage.setItem(KHOA_DANG_KY, JSON.stringify({ stt: String(ketQua.stt), mssv, hoTen, khoaThietBi: ketQua.khoaThietBi }));
       kqDangKy.textContent = 'Dang ky thanh cong!';
       hienThiTheoTrangThai();
     } else {
@@ -166,7 +164,7 @@ document.getElementById('nut').onclick = async () => {
       } else if (ketQua.hopLeHMAC && !ketQua.hopLeThietBi) {
         try { localStorage.removeItem(KHOA_DANG_KY); } catch (e) {}
         hienThiTheoTrangThai();
-        kqDangKy.textContent = 'Dang ky cua em chua co tren he thong. Hay dang ky lai (STT, Ho ten, MSSV), sau do bam diem danh lai.';
+        kqDangKy.textContent = 'Dang ky cua em chua co tren he thong. Hay dang ky lai (Ho ten, MSSV), sau do bam diem danh lai.';
         kq.textContent = 'CHUA DIEM DANH: may nay chua co trong danh sach dang ky.';
       } else {
         kq.textContent = 'MA KHONG HOP LE! Hay bam diem danh lai.\nChua ghi vao Google Sheet.\nGio nhan: ' + new Date().toLocaleTimeString();
