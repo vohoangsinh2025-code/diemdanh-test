@@ -24,6 +24,7 @@
 
 <div id="khuDiemDanh" style="display:none;">
   <p id="chaoMung"></p>
+  <p style="font-size:14px;"><a href="#" id="nutDoiNguoi">Khong phai em? Dang ky lai</a></p>
   <button id="nut" style="font-size:20px;padding:15px 30px;">BAM DE DIEM DANH</button>
   <div id="kq" style="margin-top:20px;font-size:16px;white-space:pre-line;">Chua quet.</div>
 </div>
@@ -71,6 +72,15 @@ function hienThiTheoTrangThai() {
     khuDiemDanh.style.display = 'none';
   }
 }
+
+document.getElementById('nutDoiNguoi').onclick = (e) => {
+  e.preventDefault();
+  if (confirm('Xoa dang ky tren dien thoai nay va dang ky lai?\n(Neu em da dang ky dung nguoi, hay bao thay/co de duoc go thiet bi cu.)')) {
+    localStorage.removeItem(KHOA_DANG_KY);
+    kqDangKy.textContent = '';
+    hienThiTheoTrangThai();
+  }
+};
 
 document.getElementById('nutDangKy').onclick = async () => {
   const hoTen = document.getElementById('oHoTen').value.trim();
