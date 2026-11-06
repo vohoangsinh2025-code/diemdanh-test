@@ -33,6 +33,13 @@
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwIERMCfHXH2Z17L6D3UpUIe7FAe_-3gzs1kZdnKFudyJoDJ8Xj5_N6rIyCxh7sScsz/exec';
 const SERVICE_UUID = '12345678-1234-5678-1234-56789abcdef0';
 const CHAR_UUID = '12345678-1234-5678-1234-56789abcdef1';
+const GHI_UUID = '12345678-1234-5678-1234-56789abcdef2';
+async function tinhProof(khoa, stt, buoc) {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey('raw', enc.encode(khoa), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const sig = new Uint8Array(await crypto.subtle.sign('HMAC', key, enc.encode(stt + ':' + buoc)));
+  return Array.from(sig.slice(0, 8)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
 const KHOA_LUU_TAM = 'hangChoGuiDiemDanh';
 const KHOA_DANG_KY = 'dangKyDiemDanh';
 
@@ -156,7 +163,6 @@ document.getElementById('nut').onclick = async () => {
     const service = await server.getPrimaryService(SERVICE_UUID);
     const characteristic = await service.getCharacteristic(CHAR_UUID);
     const value = await characteristic.readValue();
-    device.gatt.disconnect();
 
     const bytes = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
     const beacon = bytes[0] | (bytes[1] << 8);
@@ -166,6 +172,27 @@ document.getElementById('nut').onclick = async () => {
     kq.textContent = 'Da doc duoc ma tu board!\nDang gui len Google Sheet...';
 
     const banGhi = { beacon, buoc, ma: hmacHex };
+
+    // NANG CAP: ghi thang vao board qua Bluetooth, KHONG CAN INTERNET tren dien thoai
+    const tt0 = docThongTinDangKy();
+    if (tt0 && tt0.stt && tt0.khoaThietBi) {
+      let rv = null;
+      try {
+        const gc = await service.getCharacteristic(GHI_UUID);
+        const proof = await tinhProof(tt0.khoaThietBi, tt0.stt, buoc);
+        await gc.writeValueWithResponse(new TextEncoder().encode(tt0.stt + '|' + buoc + '|' + proof));
+        rv = new TextDecoder().decode(await gc.readValue());
+      } catch (e) { rv = null; }
+      try { device.gatt.disconnect(); } catch (e) {}
+      if (rv === 'OK') {
+        kq.textContent = 'DIEM DANH THANH CONG!\nBoard da nhan (khong can internet).\nGio: ' + new Date().toLocaleTimeString();
+        return;
+      }
+      if (rv === 'HETHAN') { kq.textContent = 'Ma da cu. Hay bam DIEM DANH lai.'; return; }
+      if (rv !== null) { kq.textContent = 'Board bao: ' + rv + '. Hay bam diem danh lai.'; return; }
+    } else {
+      try { device.gatt.disconnect(); } catch (e) {}
+    }
 
     try {
       const ketQua = await guiMotBanGhi(banGhi);
