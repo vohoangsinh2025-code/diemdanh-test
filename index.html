@@ -222,8 +222,18 @@ document.getElementById('nut').onclick = async () => {
   }
 };
 </script>
+<p id="trangThaiOffline" style="font-size:13px;color:#2e7d32;margin-top:12px;"></p>
 <script>
-if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); }); }
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+    navigator.serviceWorker.ready.then(() => {
+      caches.keys().then(k => {
+        if (k.length) document.getElementById('trangThaiOffline').textContent = 'Da luu trang de dung khi khong co mang.';
+      });
+    });
+  });
+}
 </script>
 </body>
 </html>
